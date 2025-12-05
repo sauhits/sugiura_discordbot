@@ -19,7 +19,7 @@ public class BotMain {
                 // メッセージ内容の読み取りが必要な場合（今回はSlash Command前提なら必須ではないが念のため）
                 .enableIntents(GatewayIntent.MESSAGE_CONTENT)
                 // イベントリスナーの登録
-                .addEventListeners(new ELOnReady(), new ELMemberJoin(),new Rename())
+                .addEventListeners(new ELOnReady(), new ELMemberJoin(),new ReAuth())
                 .build();
 
         jda.updateCommands().addCommands(

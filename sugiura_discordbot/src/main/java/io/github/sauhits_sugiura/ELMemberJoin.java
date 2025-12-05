@@ -34,7 +34,6 @@ public class ELMemberJoin extends ListenerAdapter {
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
         Guild guild = event.getGuild();
         Member member = event.getMember();
-
         List<Role> roles = guild.getRolesByName("unknown", true);
 
         if (!roles.isEmpty()) {
@@ -50,7 +49,8 @@ public class ELMemberJoin extends ListenerAdapter {
 
         guild.createTextChannel(channelName)
                 .addPermissionOverride(guild.getPublicRole(), null, EnumSet.of(Permission.VIEW_CHANNEL))
-                .addPermissionOverride(member, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND), null)
+                .addPermissionOverride(member,
+                        EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND), null)
                 .addPermissionOverride(guild.getSelfMember(),
                         EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND), null)
 
@@ -58,7 +58,8 @@ public class ELMemberJoin extends ListenerAdapter {
                     logger.info("Created private channel for {}", member.getUser().getName());
 
                     Button registerButton = Button.primary("btn_register", "初期登録を行う");
-                    channel.sendMessage(member.getAsMention() + " さん、ようこそ！\n下のボタンを押して、氏名・学籍番号等の情報を入力してください。")
+                    channel.sendMessage(member.getAsMention()
+                            + " さん、ようこそ！\n下のボタンを押して、氏名・学籍番号等の情報を入力してください。")
                             .setActionRow(registerButton) // ボタンを配置
                             .queue();
                 });
@@ -67,108 +68,39 @@ public class ELMemberJoin extends ListenerAdapter {
     @Override
     public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
         if (event.getComponentId().equals("btn_register")) {
-
             TextInput idInput = TextInput.create("input_student_id", "学籍番号", TextInputStyle.SHORT)
                     .setPlaceholder("例: 70310018")
-                    .setMinLength(8)
-                    .setMaxLength(8) // 必要に応じて調整
+                    .setRequiredRange(8, 8)
                     .setRequired(true)
                     .build();
 
-            // 2. 氏名の入力欄
-            TextInput nameInput = TextInput.create("input_name", "氏名 (漢字)", TextInputStyle.SHORT)
+            TextInput nameInput = TextInput.create("input_name", "氏名", TextInputStyle.SHORT)
                     .setPlaceholder("例: 杉浦彰彦")
-                    .setMinLength(1)
-                    .setMaxLength(10)
+                    .setRequiredRange(1, 10)
                     .setRequired(true)
                     .build();
 
-            // 3. ニックネームの入力欄
-            TextInput nickInput = TextInput.create("input_nickname", "ニックネーム(氏名も可)", TextInputStyle.SHORT)
+            TextInput nickInput = TextInput.create("input_nickname", "ニックネーム", TextInputStyle.SHORT)
                     .setPlaceholder("例: おとのさま")
-                    .setMinLength(1)
-                    .setMaxLength(10)
+                    .setRequiredRange(1, 10)
                     .setRequired(true)
                     .build();
 
-            // フォーム(Modal)全体の構築
-            Modal modal = Modal.create("modal_register", "初期登録フォーム")
+            TextInput teamInput = TextInput.create("input_team", "所属チーム", TextInputStyle.SHORT)
+                    .setPlaceholder("例: csチーム, 画像チーム, アプリチーム")
+                    .setRequiredRange(5, 6)
+                    .setRequired(true)
+                    .build();
+
+            // ★重要: ModalのIDを "modal_reauth" にして、新規登録と区別する
+            Modal modal = Modal.create("modal_register", "登録情報の変更")
                     .addActionRow(idInput)
                     .addActionRow(nameInput)
                     .addActionRow(nickInput)
+                    .addActionRow(teamInput)
                     .build();
-
             // ユーザーにフォームを表示
             event.replyModal(modal).queue();
         }
     }
-
-    /**
-     * フォームが送信された時の処理
-     * (ニックネームを変更する)
-     */
-    // @Override
-    // public void onModalInteraction(@NotNull ModalInteractionEvent event) {
-    //     if (event.getModalId().equals("modal_register")) {
-
-    //         // 入力値の取得
-    //         String studentId = event.getValue("input_student_id").getAsString();
-    //         String fullName = event.getValue("input_name").getAsString();
-    //         String nickname = event.getValue("input_nickname").getAsString();
-
-    //         // 書式の生成: [学籍番号]-[ニックネーム]
-    //         String newDisplayName = String.format("%s/%s",nickname,  fullName);
-
-    //         Member member = event.getMember();
-    //         Guild guild = event.getGuild();
-
-    //         if (member != null && guild != null) {
-    //             // ニックネーム変更の実行
-    //             member.modifyNickname(newDisplayName).queue(
-    //                     success -> {
-    //                         // 成功時のメッセージ
-    //                         event.reply("登録が完了しました！\n表示名: " + newDisplayName).setEphemeral(true).queue();
-    //                         logger.info("Renamed user {} to {}", member.getUser().getName(), newDisplayName);
-
-    //                         Role unknownRole = guild.getRolesByName("unknown", true).stream().findFirst().orElse(null);
-
-    //                         // ★修正箇所: "Authorized" ロールを取得
-    //                         Role authorizedRole = guild.getRolesByName("Authorized", true).stream().findFirst()
-    //                                 .orElse(null);
-
-    //                         if (unknownRole != null && authorizedRole != null) {
-    //                             // ロールの入れ替え処理
-    //                             guild.removeRoleFromMember(member, unknownRole).queue();
-    //                             guild.addRoleToMember(member, authorizedRole).queue();
-
-    //                             // 完了メッセージ
-    //                             event.reply("登録が完了しました！正規メンバー(Authorized)として登録されました。\nこのチャンネルは5秒後に自動削除されます。")
-    //                                     .setEphemeral(true)
-    //                                     .queue();
-
-    //                             // チャンネルの削除 (5秒後)
-    //                             if (event.getChannel() instanceof TextChannel) {
-    //                                 ((TextChannel) event.getChannel()).delete().queueAfter(5, TimeUnit.SECONDS);
-    //                             }
-
-    //                             logger.info("Registration completed for {}. Role 'Authorized' granted.",
-    //                                     newDisplayName);
-
-    //                         } else {
-    //                             // ロールが見つからない場合
-    //                             event.reply(
-    //                                     "登録自体は完了しましたが、ロール 'Authorized' または 'unknown' が見つからず自動付与に失敗しました。\n管理者にお問い合わせください。")
-    //                                     .setEphemeral(true)
-    //                                     .queue();
-    //                             logger.error("Role 'Authorized' or 'unknown' not found.");
-    //                         }
-    //                     },
-    //                     error -> {
-    //                         // 失敗時 (権限不足や文字数オーバーなど)
-    //                         event.reply("エラーが発生しました: " + error.getMessage()).setEphemeral(true).queue();
-    //                         logger.error("Failed to rename user: {}", error.getMessage());
-    //                     });
-    //         }
-    //     }
-    // }
 }
