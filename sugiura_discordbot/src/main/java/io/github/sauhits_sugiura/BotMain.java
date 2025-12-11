@@ -29,3 +29,6 @@ public class BotMain {
 
 // mvn clean package
 // java -jar .\target\sugiura_discordbot-1.0-SNAPSHOT.jar
+
+// docker build -t sugiura_bot .
+// docker run -d --name run_sugiura_bot sugiura_bot
