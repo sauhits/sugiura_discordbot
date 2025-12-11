@@ -1,0 +1,10 @@
+services:
+  discord-bot:
+    build: ./sugiura_discordbot
+    container_name: discord-bot-container
+    # 失敗しても自動で再起動する設定（Bot運用に便利）
+    restart: unless-stopped
+    volumes:
+      # ホストの .env ファイルを コンテナ内の /app/.env にマウントする
+      # これにより、Javaコード側の Dotenv.load() が正常に動作します
+      - ./.env:/sugiura_discordbot/.env
